@@ -26,48 +26,57 @@ public class Main {
             System.out.print("Enter an animal: ");
             String input = scanner.nextLine().trim();
 
-            if (input.equalsIgnoreCase("exit")) {
-                break;
-            }
+            if (input.equalsIgnoreCase("exit")) break;
 
-            String[] strings = input.split("\\|");
-            if (strings.length != 3) {
-                System.out.println("Incorrect format. Use: name|type|onomatopoeia");
-                continue;
-            }
-
-            String name = strings[0];
-            String typeStr = strings[1].toLowerCase();
-            String onomatopoeia = strings[2];
-
-            AnimalType type = AnimalType.getAnimalType(typeStr).orElse(null);
-            if (type == null) {
-                System.out.println("Unknown type. Use: Terrestrial, Aquatic, or Aerial");
-                continue;
-            }
-
-            Animal animal = switch (type) {
-                case TERRESTRIAL -> new Terrestrial(name, onomatopoeia);
-                case AQUATIC -> new Aquatic(name, onomatopoeia);
-                case AERIAL -> new Aerial(name, onomatopoeia);
-            };
-
-            animals.add(animal);
+            Optional<Animal> animal = parseInput(input);
+            animal.ifPresent(animals::add);
         }
 
 
-        Map<AnimalType, List<Animal>> groupedAnimals = animals.stream()
-                .collect(Collectors.groupingBy(Animal::getType));
+        Map<AnimalType, List<Animal>> groupedAnimals = groupAnimals(animals);
 
-        System.out.println("List of Animals by Type\n");
+        System.out.println("\nList of Animals by Type\n");
         groupedAnimals.forEach((type, animalList) -> {
-            System.out.println("Type: ");
+            System.out.println("■" + type + ":");
             animalList.forEach(animal -> {
                 System.out.println("  - " + animal.getName() + " makes: " + animal.makeSound());
                 animal.move();
             });
         });
 
-        System.out.println("Program finished.");
+        System.out.println("\nProgram finished.");
+    }
+
+
+    public static Optional<Animal> parseInput(String input) {
+        String[] parts = input.split("\\|");
+        if (parts.length != 3) {
+            System.out.println("Incorrect format. Use: name|type|onomatopoeia");
+            return Optional.empty();
+        }
+
+        String name = parts[0];
+        String typeStr = parts[1].toLowerCase();
+        String onomatopoeia = parts[2];
+
+        return createAnimal(name, typeStr, onomatopoeia);
+    }
+
+    public static Optional<Animal> createAnimal(String name, String typeStr, String onomatopoeia) {
+        AnimalType type = AnimalType.getAnimalType(typeStr).orElse(null);
+        if (type == null) {
+            System.out.println("Unknown type. Use: Terrestrial, Aquatic, or Aerial.");
+            return Optional.empty();
+        }
+
+        return Optional.of(switch (type) {
+            case TERRESTRIAL -> new Terrestrial(name, onomatopoeia);
+            case AQUATIC -> new Aquatic(name, onomatopoeia);
+            case AERIAL -> new Aerial(name, onomatopoeia);
+        });
+    }
+
+    public static Map<AnimalType, List<Animal>> groupAnimals(List<Animal> animals) {
+        return animals.stream().collect(Collectors.groupingBy(Animal::getType));
     }
 }
